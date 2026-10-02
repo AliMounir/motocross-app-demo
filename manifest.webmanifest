@@ -1,6 +1,6 @@
 {
-  "name": "Pinnit preview",
-  "short_name": "Pinnit",
+  "name": "Pinned preview",
+  "short_name": "Pinned",
   "start_url": "./?src=homescreen",
   "scope": "./",
   "display": "standalone",
