@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Pinned Admin</title>
+    <link rel="icon" type="image/png" href="./favicon-64.png" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0b0d; --s1: #141417; --s2: #1c1c20; --s3: #28282d;
+        --line: #ffffff12; --line-2: #ffffff21;
+        --tx: #f4f4f5; --tx2: #a4a4ad; --tx3: #6c6c76;
+        --or: #ff5e1a; --or-dk: #d8430b; --or-dim: #ff5e1a24; --bad: #ff4b4b;
+        --f-body: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --f-mono: "Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--tx); font: 14px/1.45 var(--f-body); }
+      button, input { font: inherit; color: inherit; }
+      .mono { font-family: var(--f-mono); }
+      .muted { color: var(--tx2); }
+      .btn { background: var(--s2); border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+      .btn:hover { background: var(--s3); }
+      .btn.primary { background: var(--or); border-color: var(--or); color: #fff; font-weight: 600; }
+      .btn.primary:hover { background: var(--or-dk); }
+      .btn:disabled { opacity: .5; cursor: default; }
+      input[type=password], input[type=search] {
+        background: var(--s1); border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 12px; outline: none;
+      }
+      input:focus { border-color: var(--or); }
+
+      /* Gate */
+      #gate { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+      #gate form { width: 100%; max-width: 320px; display: grid; gap: 12px; text-align: center; }
+      #gate h1 { margin: 0 0 4px; font-size: 22px; }
+      #gate input { text-align: center; letter-spacing: .3em; font-size: 18px; }
+      #gate .err { color: var(--bad); min-height: 1.4em; font-size: 13px; }
+
+      /* App */
+      #app { display: none; max-width: 1400px; margin: 0 auto; padding: 20px 16px 60px; }
+      header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
+      header h1 { margin: 0; font-size: 20px; flex: 1; }
+      header h1 span { color: var(--or); }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+      .stat { background: var(--s1); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+      .stat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+      .stat span { color: var(--tx2); font-size: 12px; }
+      .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+      .tab { background: none; border: 1px solid transparent; border-radius: 999px; padding: 6px 14px; cursor: pointer; color: var(--tx2); }
+      .tab.on { background: var(--or-dim); color: var(--or); border-color: var(--or); }
+      .tabs .grow { flex: 1; }
+      .tabs input[type=search] { min-width: 200px; }
+      .panel { display: none; }
+      .panel.on { display: block; }
+      .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--s1); }
+      table { border-collapse: collapse; width: 100%; font-size: 13px; }
+      th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { position: sticky; top: 0; background: var(--s2); color: var(--tx2); font-weight: 600; white-space: nowrap; font-size: 12px; }
+      tr:last-child td { border-bottom: 0; }
+      tbody tr:hover td { background: #ffffff06; }
+      td.nowrap { white-space: nowrap; }
+      td.wish { min-width: 220px; max-width: 360px; }
+      .chip { display: inline-block; background: var(--s3); border-radius: 6px; padding: 1px 7px; margin: 1px 3px 1px 0; font-size: 12px; white-space: nowrap; }
+      .empty { padding: 30px; text-align: center; color: var(--tx2); }
+
+      /* Survey summary */
+      .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 18px; }
+      .q { background: var(--s1); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+      .q h3 { margin: 0 0 10px; font-size: 14px; }
+      .bar { display: grid; grid-template-columns: 1fr 44px; gap: 8px; align-items: center; margin: 6px 0; font-size: 12px; }
+      .bar .lbl { position: relative; padding: 3px 8px; border-radius: 6px; overflow: hidden; }
+      .bar .lbl i { position: absolute; inset: 0 auto 0 0; background: var(--or-dim); border-right: 2px solid var(--or); }
+      .bar .lbl span { position: relative; }
+      .bar .n { text-align: right; color: var(--tx2); font-variant-numeric: tabular-nums; }
+    </style>
+  </head>
+  <body>
+    <div id="gate">
+      <form id="gate-form" autocomplete="off">
+        <h1>Pinned admin</h1>
+        <p class="muted" style="margin:0">Enter the password to view signups.</p>
+        <input id="pw" type="password" inputmode="numeric" autofocus aria-label="Password" />
+        <button class="btn primary" id="gate-btn" type="submit">Unlock</button>
+        <div class="err" id="gate-err"></div>
+      </form>
+    </div>
+
+    <div id="app">
+      <header>
+        <h1><span>Pinned</span> admin</h1>
+        <span class="muted mono" id="updated"></span>
+        <button class="btn" id="refresh">Refresh</button>
+        <button class="btn" id="logout">Lock</button>
+      </header>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="tabs">
+        <button class="tab on" data-tab="waitlist">Waitlist</button>
+        <button class="tab" data-tab="surveys">Survey responses</button>
+        <span class="grow"></span>
+        <input type="search" id="q" placeholder="Search name, email, country…" />
+        <button class="btn" id="csv">Export CSV</button>
+      </div>
+
+      <section class="panel on" id="p-waitlist"><div class="table-wrap" id="wl-table"></div></section>
+      <section class="panel" id="p-surveys">
+        <div class="summary" id="sv-summary"></div>
+        <div class="table-wrap" id="sv-table"></div>
+      </section>
+    </div>
+
+    <script>
+      const SUPABASE_URL = 'https://bfebkenazohcomvzppkj.supabase.co'
+      const SUPABASE_KEY = 'sb_publishable_IbbdQ8PW4XQeGYsSMNrNIA_FnKKVVxv'
+      const PW_KEY = 'pinned_admin_pw'
+
+      // Mirrors the survey questions in the app, so answers get readable labels.
+      const QUESTIONS = [
+        { id: 'ride', q: 'What do you ride?', opts: ['Motocross', 'Enduro', 'Desert & dunes', 'Hard enduro', 'Adventure', 'Just starting'] },
+        { id: 'freq', q: 'How often are you out?', opts: ['Every week', '2–3 times a month', 'Once a month', 'A few times a year'] },
+        { id: 'top3', q: 'What would make Pinned a must-have?', opts: ['Ride tracking & stats', 'Offline maps', 'Crews & group rides', 'Service reminders', 'Suspension wizard', 'MX lap timing', 'Trails & events near me', 'Rentals & service centers'] },
+        { id: 'today', q: 'How do you keep track today?', opts: ['Strava', 'Relive', 'Wikiloc / Gaia', 'A bike maker’s app', 'Notes or Excel', 'WhatsApp groups', 'Nothing'] },
+        { id: 'pay', q: 'What would Pro be worth to you?', opts: ['I’d stay on free', 'Under $20 / month', 'About $20 / month', 'About $30 / month', '$50+ / month'] },
+        { id: 'rate', q: 'How excited after the preview?', scale: true },
+      ]
+
+      let data = { waitlist: [], surveys: [] }
+      let tab = 'waitlist'
+
+      const $ = (s) => document.querySelector(s)
+      const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+      const fmtDate = (d) => (d ? new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '')
+      const chips = (v) => (Array.isArray(v) ? v.map((x) => `<span class="chip">${esc(x)}</span>`).join('') : esc(v))
+      const store = {
+        get: () => { try { return sessionStorage.getItem(PW_KEY) } catch { return null } },
+        set: (v) => { try { v ? sessionStorage.setItem(PW_KEY, v) : sessionStorage.removeItem(PW_KEY) } catch {} },
+      }
+
+      async function load(password) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_dashboard`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+          body: JSON.stringify({ p_password: password }),
+        })
+        const text = await res.text()
+        if (!res.ok) {
+          let msg = text
+          try { msg = JSON.parse(text).message || text } catch {}
+          const err = new Error(msg)
+          err.status = res.status
+          throw err
+        }
+        return JSON.parse(text)
+      }
+
+      async function unlock(password, quiet) {
+        const btn = $('#gate-btn')
+        btn.disabled = true
+        $('#gate-err').textContent = ''
+        try {
+          data = await load(password)
+          store.set(password)
+          $('#gate').style.display = 'none'
+          $('#app').style.display = 'block'
+          render()
+        } catch (e) {
+          store.set(null)
+          $('#gate').style.display = ''
+          $('#app').style.display = 'none'
+          if (!quiet) {
+            $('#gate-err').textContent = /invalid password/.test(e.message)
+              ? 'Wrong password.'
+              : /admin_dashboard/.test(e.message)
+                ? 'The admin_dashboard function isn’t installed in Supabase yet.'
+                : `Couldn’t load: ${e.message}`
+          }
+        } finally {
+          btn.disabled = false
+        }
+      }
+
+      function matches(row, q) {
+        if (!q) return true
+        return JSON.stringify(row).toLowerCase().includes(q)
+      }
+
+      function render() {
+        const q = $('#q').value.trim().toLowerCase()
+        const wl = data.waitlist.filter((r) => matches(r, q))
+        const sv = data.surveys.filter((r) => matches(r, q))
+        $('#updated').textContent = `Updated ${new Date().toLocaleTimeString()}`
+
+        // Referral counts: how many signups used each person's referral code.
+        const refs = {}
+        for (const r of data.waitlist) if (r.referred_by) refs[r.referred_by] = (refs[r.referred_by] || 0) + 1
+
+        const dayAgo = Date.now() - 864e5
+        const today = data.waitlist.filter((r) => new Date(r.created_at) > dayAgo).length
+        const countries = new Set(data.waitlist.map((r) => r.country).filter(Boolean)).size
+        const rates = data.surveys.map((r) => Number(r.answers?.rate)).filter((n) => !isNaN(n) && n > 0)
+        const avgRate = rates.length ? (rates.reduce((a, b) => a + b, 0) / rates.length).toFixed(1) : '–'
+        $('#stats').innerHTML = [
+          [data.waitlist.length, 'Waitlist signups'],
+          [today, 'Signups last 24h'],
+          [countries, 'Countries'],
+          [data.surveys.length, 'Survey responses'],
+          [avgRate, 'Avg. excitement'],
+        ].map(([n, l]) => `<div class="stat"><b>${esc(n)}</b><span>${esc(l)}</span></div>`).join('')
+
+        // Waitlist table
+        $('#wl-table').innerHTML = wl.length
+          ? `<table><thead><tr>
+              <th>#</th><th>Joined</th><th>Name</th><th>Email</th><th>Phone</th><th>Country</th>
+              <th>Role</th><th>Disciplines</th><th>Bike</th><th>Source</th><th>Referred by</th><th>Ref code</th><th>Referrals</th>
+            </tr></thead><tbody>${wl.map((r) => `<tr>
+              <td class="mono muted">${data.waitlist.length - data.waitlist.indexOf(r)}</td>
+              <td class="nowrap">${esc(fmtDate(r.created_at))}</td>
+              <td class="nowrap">${esc(r.name)}</td>
+              <td><a href="mailto:${esc(r.email)}" style="color:inherit">${esc(r.email)}</a></td>
+              <td class="nowrap">${esc(r.phone)}</td>
+              <td class="nowrap">${esc(r.country)}</td>
+              <td>${esc(r.role)}</td>
+              <td>${chips(r.disciplines)}</td>
+              <td>${esc(r.bike)}</td>
+              <td>${esc(r.source)}</td>
+              <td class="mono">${esc(r.referred_by)}</td>
+              <td class="mono">${esc(r.referral_code)}</td>
+              <td class="mono">${refs[r.referral_code] || ''}</td>
+            </tr>`).join('')}</tbody></table>`
+          : `<div class="empty">${q ? 'No matches.' : 'No signups yet.'}</div>`
+
+        // Survey summary (always over all responses)
+        $('#sv-summary').innerHTML = data.surveys.length ? QUESTIONS.map((qq) => {
+          const counts = {}
+          for (const r of data.surveys) {
+            const v = r.answers?.[qq.id]
+            for (const x of Array.isArray(v) ? v : v != null && v !== '' ? [v] : []) counts[x] = (counts[x] || 0) + 1
+          }
+          const keys = qq.scale
+            ? Object.keys(counts).sort((a, b) => b - a)
+            : [...(qq.opts || []), ...Object.keys(counts).filter((k) => !(qq.opts || []).includes(k))]
+          const max = Math.max(1, ...Object.values(counts))
+          return `<div class="q"><h3>${esc(qq.q)}</h3>${keys.map((k) => `
+            <div class="bar"><div class="lbl"><i style="width:${((counts[k] || 0) / max) * 100}%"></i><span>${esc(qq.scale ? `${k} / 5` : k)}</span></div>
+            <div class="n">${counts[k] || 0}</div></div>`).join('') || '<span class="muted">No answers</span>'}</div>`
+        }).join('') : ''
+
+        // Survey table
+        $('#sv-table').innerHTML = sv.length
+          ? `<table><thead><tr><th>Submitted</th><th>Email</th><th>Source</th>
+              ${QUESTIONS.map((qq) => `<th>${esc(qq.q)}</th>`).join('')}<th>Wish</th>
+            </tr></thead><tbody>${sv.map((r) => `<tr>
+              <td class="nowrap">${esc(fmtDate(r.created_at))}</td>
+              <td>${esc(r.email) || '<span class="muted">anonymous</span>'}</td>
+              <td>${esc(r.source)}</td>
+              ${QUESTIONS.map((qq) => `<td>${chips(r.answers?.[qq.id])}</td>`).join('')}
+              <td class="wish">${esc(r.answers?.wish)}</td>
+            </tr>`).join('')}</tbody></table>`
+          : `<div class="empty">${q ? 'No matches.' : 'No survey responses yet.'}</div>`
+      }
+
+      function toCSV(rows, cols) {
+        const cell = (v) => {
+          const s = Array.isArray(v) ? v.join('; ') : v && typeof v === 'object' ? JSON.stringify(v) : String(v ?? '')
+          return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+        }
+        return [cols.map((c) => cell(c[0])).join(','), ...rows.map((r) => cols.map((c) => cell(c[1](r))).join(','))].join('\n')
+      }
+
+      function exportCSV() {
+        const csv = tab === 'waitlist'
+          ? toCSV(data.waitlist, ['created_at', 'name', 'email', 'phone', 'country', 'role', 'disciplines', 'bike', 'source', 'referred_by', 'referral_code'].map((k) => [k, (r) => r[k]]))
+          : toCSV(data.surveys, [
+              ['created_at', (r) => r.created_at], ['email', (r) => r.email], ['source', (r) => r.source],
+              ...QUESTIONS.map((qq) => [qq.id, (r) => r.answers?.[qq.id]]), ['wish', (r) => r.answers?.wish],
+            ])
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))
+        a.download = `pinned-${tab}-${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(a.href)
+      }
+
+      $('#gate-form').addEventListener('submit', (e) => { e.preventDefault(); unlock($('#pw').value) })
+      $('#refresh').addEventListener('click', () => unlock(store.get() || ''))
+      $('#logout').addEventListener('click', () => { store.set(null); location.reload() })
+      $('#q').addEventListener('input', render)
+      $('#csv').addEventListener('click', exportCSV)
+      document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+        tab = b.dataset.tab
+        document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b))
+        document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('on', p.id === `p-${tab}`))
+      }))
+
+      const saved = store.get()
+      if (saved) unlock(saved, true)
+    </script>
+  </body>
+</html>
